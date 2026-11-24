@@ -1,1 +1,431 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Speedster Smash - HTML5 Platform Fighter</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #game-container {
+      position: relative;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      border: 3px solid #334155;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 65%, #93c5fd 100%);
+    }
+    #hud {
+      position: absolute;
+      bottom: 16px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-around;
+      pointer-events: none;
+    }
+    .player-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 2px solid #475569;
+      border-radius: 10px;
+      padding: 10px 24px;
+      min-width: 210px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+    }
+    .p1-card { border-color: #3b82f6; }
+    .p2-card { border-color: #ef4444; }
+    .name {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .percent {
+      font-size: 38px;
+      font-weight: 900;
+      line-height: 1.1;
+      margin: 4px 0;
+    }
+    .stocks {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .stock-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    #controls-bar {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #94a3b8;
+      display: flex;
+      gap: 30px;
+    }
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+    #overlay h1 {
+      font-size: 48px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="game" width="1000" height="580"></canvas>
+
+    <div id="hud">
+      <div class="player-card p1-card">
+        <div class="name" style="color:#60a5fa;">P1: Blue Blur</div>
+        <div class="percent" id="p1-percent">0%</div>
+        <div class="stocks" id="p1-stocks"></div>
+      </div>
+
+      <div class="player-card p2-card">
+        <div class="name" style="color:#f87171;">P2: Dark Edge</div>
+        <div class="percent" id="p2-percent">0%</div>
+        <div class="stocks" id="p2-stocks"></div>
+      </div>
+    </div>
+
+    <div id="overlay">
+      <h1 id="winner-text">PLAYER 1 WINS!</h1>
+      <button onclick="resetGame()">Play Again</button>
+    </div>
+  </div>
+
+  <div id="controls-bar">
+    <div><strong>P1:</strong> A / D Move • W Jump (x2) • F Spin Dash • G Homing Attack</div>
+    <div><strong>P2:</strong> ← / → Move • ↑ Jump (x2) • K Chaos Dash • L Chaos Blast</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // Game Constants
+    const GRAVITY = 0.65;
+    const FRICTION = 0.84;
+    const BLAST_ZONE = { left: -120, right: 1120, top: -180, bottom: 720 };
+
+    // Stage Platforms (Green Hill Zone style)
+    const platforms = [
+      { x: 200, y: 400, w: 600, h: 36, main: true },  // Main stage
+      { x: 260, y: 280, w: 150, h: 14, main: false }, // Left floating platform
+      { x: 590, y: 280, w: 150, h: 14, main: false }, // Right floating platform
+      { x: 425, y: 185, w: 150, h: 14, main: false }  // Top floating platform
+    ];
+
+    // Input Tracking
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) {
+        e.preventDefault();
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    // Optional: Load external sprite sheets here if you add PNGs to your repo
+    // const sonicSprite = new Image();
+    // sonicSprite.src = 'sonic_spritesheet.png';
+
+    class Fighter {
+      constructor({ x, y, color, stripeColor, shoeColor, controls, facing }) {
+        this.spawnX = x;
+        this.spawnY = y;
+        this.color = color;
+        this.stripeColor = stripeColor;
+        this.shoeColor = shoeColor;
+        this.controls = controls;
+        this.defaultFacing = facing;
+
+        this.w = 38;
+        this.h = 46;
+        this.stocks = 3;
+        this.respawn();
+      }
+
+      respawn() {
+        this.x = this.spawnX;
+        this.y = this.spawnY;
+        this.vx = 0;
+        this.vy = 0;
+        this.percent = 0;
+        this.facing = this.defaultFacing;
+        this.grounded = false;
+        this.jumps = 2;
+        this.jumpPressed = false;
+        this.attackCooldown = 0;
+        this.attackTimer = 0;
+        this.attackType = null; // 'dash' or 'blast'
+        this.hitstun = 0;
+        this.invuln = 60; // Brief spawn invulnerability
+      }
+
+      update(opponent) {
+        if (this.invuln > 0) this.invuln--;
+        if (this.attackCooldown > 0) this.attackCooldown--;
+        if (this.hitstun > 0) this.hitstun--;
+
+        // Movement controls (disabled during hitstun)
+        if (this.hitstun <= 0) {
+          const speed = 1.35;
+          const maxSpeed = 8.5;
+
+          if (keys[this.controls.left]) {
+            this.vx -= speed;
+            if (this.attackTimer <= 0) this.facing = -1;
+          }
+          if (keys[this.controls.right]) {
+            this.vx += speed;
+            if (this.attackTimer <= 0) this.facing = 1;
+          }
+
+          // Clamp horizontal speed unless dashing/knocked back
+          if (this.attackTimer <= 0 && Math.abs(this.vx) > maxSpeed) {
+            this.vx = Math.sign(this.vx) * maxSpeed;
+          }
+
+          // Double Jump
+          if (keys[this.controls.jump]) {
+            if (!this.jumpPressed && this.jumps > 0) {
+              this.vy = -13.5;
+              this.jumps--;
+              this.grounded = false;
+              this.jumpPressed = true;
+            }
+          } else {
+            this.jumpPressed = false;
+          }
+
+          // Attack 1: Spin Dash (horizontal burst + hitbox)
+          if (keys[this.controls.attack1] && this.attackCooldown <= 0) {
+            this.attackType = 'dash';
+            this.attackTimer = 14;
+            this.attackCooldown = 32;
+            this.vx = this.facing * 16;
+            this.vy = -2;
+          }
+
+          // Attack 2: Energy/Homing Burst (area attack around character)
+          if (keys[this.controls.attack2] && this.attackCooldown <= 0) {
+            this.attackType = 'blast';
+            this.attackTimer = 12;
+            this.attackCooldown = 38;
+            this.vx *= 0.3;
+          }
+        }
+
+        // Physics integration
+        this.vy += GRAVITY;
+        if (this.grounded && this.attackTimer <= 0) {
+          this.vx *= FRICTION;
+        } else {
+          this.vx *= 0.94;
+        }
+
+        const prevBottom = this.y + this.h;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Platform collisions (only land when falling from above)
+        this.grounded = false;
+        if (this.vy >= 0) {
+          for (const p of platforms) {
+            const withinX = this.x + this.w > p.x && this.x < p.x + p.w;
+            const crossedTop = prevBottom <= p.y + 8 && this.y + this.h >= p.y;
+            if (withinX && crossedTop) {
+              this.y = p.y - this.h;
+              this.vy = 0;
+              this.grounded = true;
+              this.jumps = 2;
+              break;
+            }
+          }
+        }
+
+        // Handle Active Attack Hitbox
+        if (this.attackTimer > 0) {
+          this.attackTimer--;
+          this.checkHit(opponent);
+        }
+
+        // Blast Zone KO Check
+        if (
+          this.x < BLAST_ZONE.left ||
+          this.x > BLAST_ZONE.right ||
+          this.y < BLAST_ZONE.top ||
+          this.y > BLAST_ZONE.bottom
+        ) {
+          this.stocks--;
+          updateHUD();
+          if (this.stocks > 0) {
+            this.respawn();
+          } else {
+            endGame(this === p1 ? 'PLAYER 2 WINS!' : 'PLAYER 1 WINS!');
+          }
+        }
+      }
+
+      checkHit(opponent) {
+        if (opponent.invuln > 0 || opponent.hitstun > 10) return;
+
+        let hitbox;
+        if (this.attackType === 'dash') {
+          hitbox = {
+            x: this.facing === 1 ? this.x + 10 : this.x - 24,
+            y: this.y + 6,
+            w: 52,
+            h: 36
+          };
+        } else {
+          hitbox = {
+            x: this.x - 22,
+            y: this.y - 16,
+            w: this.w + 44,
+            h: this.h + 32
+          };
+        }
+
+        const hit =
+          hitbox.x < opponent.x + opponent.w &&
+          hitbox.x + hitbox.w > opponent.x &&
+          hitbox.y < opponent.y + opponent.h &&
+          hitbox.y + hitbox.h > opponent.y;
+
+        if (hit) {
+          const damage = this.attackType === 'dash' ? 9 : 14;
+          opponent.percent += damage;
+
+          // Smash-style Knockback Scaling Formula
+          const baseKB = this.attackType === 'dash' ? 7 : 9;
+          const scaling = opponent.percent * 0.16;
+          const totalKB = baseKB + scaling;
+
+          const dir = Math.sign(opponent.x + opponent.w / 2 - (this.x + this.w / 2)) || this.facing;
+          opponent.vx = dir * totalKB;
+          opponent.vy = -totalKB * 0.68;
+          opponent.hitstun = Math.min(28, Math.floor(8 + opponent.percent * 0.12));
+          opponent.grounded = false;
+
+          this.attackTimer = 0; // Prevent multi-hitting on the same swing
+          updateHUD();
+        }
+      }
+
+      draw() {
+        ctx.save();
+        if (this.invuln > 0 && Math.floor(this.invuln / 4) % 2 === 0) {
+          ctx.globalAlpha = 0.45;
+        }
+
+        const cx = this.x + this.w / 2;
+        const cy = this.y + this.h / 2;
+
+        // Attack visual effects
+        if (this.attackTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, this.attackType === 'blast' ? 44 : 28, 0, Math.PI * 2);
+          ctx.fillStyle = this.attackType === 'blast' ? 'rgba(250, 204, 21, 0.45)' : 'rgba(96, 165, 250, 0.5)';
+          ctx.fill();
+        }
+
+        // Spin-ball state when jumping or dashing
+        if (!this.grounded || this.attackType === 'dash' && this.attackTimer > 0) {
+          ctx.beginPath();
+          ctx.arc(cx, cy + 4, 20, 0, Math.PI * 2);
+          ctx.fillStyle = this.color;
+          ctx.fill();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = this.stripeColor;
+          ctx.stroke();
+        } else {
+          // Stylized Speedster Character Body
+          // Quills
+          ctx.fillStyle = this.color;
+          ctx.beginPath();
+          ctx.moveTo(cx, this.y + 4);
+          ctx.lineTo(cx - this.facing * 24, this.y + 10);
+          ctx.lineTo(cx - this.facing * 6, this.y + 18);
+          ctx.lineTo(cx - this.facing * 22, this.y + 24);
+          ctx.lineTo(cx, this.y + 26);
+          ctx.fill();
+
+          // Head & Torso
+          ctx.beginPath();
+          ctx.arc(cx, this.y + 16, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(cx - 10, this.y + 26, 20, 12);
+
+          // Quill Stripe (for Shadow/Dark Edge)
+          if (this.stripeColor !== this.color) {
+            ctx.fillStyle = this.stripeColor;
+            ctx.fillRect(cx - this.facing * 16, this.y + 11, 10, 3);
+          }
+
+          // Eye
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.ellipse(cx + this.facing * 6, this.y + 14, 5, 7, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#111827';
+          ctx.beginPath();
+          ctx.arc(cx + this.facing * 8, this.y + 14, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Shoes
+          ctx.fillStyle = this.shoeColor;
+          ctx.fillRect(cx - 12, this.y + 38, 10, 8);
+          ctx.fillRect(cx + 2, this.y + 38, 10, 8);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(cx - 10, this.y + 40, 6, 2);
+          ctx.fillRect(cx + 4, this.y + 40, 6, 2);
+        }
+
+        ctx.restore();
