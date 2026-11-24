@@ -1,140 +1,2190 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Speedster Smash - HTML5 Platform Fighter</title>
+  <meta name="theme-color" content="#090d1c" />
+  <title>Stickman Showdown</title>
   <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #090d1c;
+      color: #f8fafc;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --cyan: #4de5ed;
+      --pink: #ff5b83;
+      --muted: #9aa8c2;
+    }
+
     * {
       box-sizing: border-box;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 35%, rgba(32, 71, 139, 0.3), transparent 55%),
+        linear-gradient(145deg, #10182d, #090d1c 65%);
+    }
+
+    button {
+      font: inherit;
+    }
+
+    button:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 4px;
+    }
+
+    .game-shell {
+      position: relative;
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .game-shell::before,
+    .game-shell::after {
+      position: absolute;
+      z-index: -1;
+      width: 28rem;
+      height: 28rem;
+      border: 1px solid rgba(77, 229, 237, 0.12);
+      border-radius: 50%;
+      content: "";
+      box-shadow: 0 0 0 48px rgba(77, 229, 237, 0.025), 0 0 0 96px rgba(77, 229, 237, 0.02);
+    }
+
+    .game-shell::before {
+      top: -20rem;
+      left: -12rem;
+    }
+
+    .game-shell::after {
+      right: -14rem;
+      bottom: -21rem;
+      border-color: rgba(255, 91, 131, 0.16);
+      box-shadow: 0 0 0 48px rgba(255, 91, 131, 0.025), 0 0 0 96px rgba(255, 91, 131, 0.02);
+    }
+
+    .screen {
+      display: none;
+      width: min(100% - 32px, 900px);
+      animation: arrive 300ms ease both;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    @keyframes arrive {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .title-screen {
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--cyan);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+    }
+
+    .game-title {
+      margin: 0;
+      color: #fff;
+      font-size: clamp(2.6rem, 9vw, 6.5rem);
+      font-style: italic;
+      font-weight: 1000;
+      letter-spacing: -0.07em;
+      line-height: 0.92;
+      text-shadow: 0 5px 0 #18294b, 0 12px 40px rgba(77, 229, 237, 0.22);
+      text-transform: uppercase;
+    }
+
+    .game-title span {
+      display: block;
+      color: var(--cyan);
+    }
+
+    .tagline {
+      margin: 20px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .fighters {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: clamp(30px, 9vw, 100px);
+      height: 150px;
+      margin: 18px 0 28px;
+    }
+
+    .fighter {
+      width: 68px;
+      height: 138px;
+      overflow: visible;
+      filter: drop-shadow(0 0 12px currentColor);
+    }
+
+    .fighter.blue {
+      color: var(--cyan);
+      transform: rotate(-8deg);
+    }
+
+    .fighter.red {
+      color: var(--pink);
+      transform: scaleX(-1) rotate(-8deg);
+    }
+
+    .fighter circle,
+    .fighter path,
+    .preview-fighter circle,
+    .preview-fighter path {
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 7;
+    }
+
+    .primary-button,
+    .menu-button,
+    .back-button {
+      border: 0;
+      cursor: pointer;
+      transition: transform 150ms ease, filter 150ms ease, border-color 150ms ease;
+    }
+
+    .primary-button:hover,
+    .menu-button:hover,
+    .back-button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.12);
+    }
+
+    .primary-button {
+      min-width: 210px;
+      padding: 16px 34px;
+      border: 1px solid #a4fbff;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #65f3f5, #14b8cf);
+      box-shadow: 0 8px 30px rgba(20, 184, 207, 0.28);
+      color: #081322;
+      font-size: 1rem;
+      font-weight: 950;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .menu-screen {
+      max-width: 720px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      margin: 0 auto;
+      padding: clamp(22px, 5vw, 48px);
+      border: 1px solid rgba(141, 171, 224, 0.2);
+      border-radius: 18px;
+      background: rgba(12, 19, 38, 0.9);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45), inset 0 1px rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(14px);
+    }
+
+    .menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .menu-header h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 5vw, 2.5rem);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .version-label {
+      margin-left: 8px;
+      color: #7888a5;
+      font-size: 0.7rem;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      vertical-align: middle;
+    }
+
+    .back-button {
+      padding: 9px 13px;
+      border: 1px solid rgba(154, 168, 194, 0.3);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.04);
+      color: #cbd5e1;
+      font-size: 0.8rem;
+      font-weight: 750;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .menu-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .menu-button {
+      min-height: 72px;
+      padding: 14px 12px;
+      border: 1px solid rgba(141, 171, 224, 0.2);
+      border-radius: 11px;
+      background: linear-gradient(155deg, rgba(30, 45, 76, 0.9), rgba(17, 26, 48, 0.92));
+      color: #e8efff;
+      font-size: clamp(0.9rem, 3vw, 1.15rem);
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .menu-button[aria-pressed="true"] {
+      border-color: var(--cyan);
+      background: linear-gradient(155deg, rgba(27, 86, 108, 0.75), rgba(20, 39, 67, 0.95));
+      box-shadow: 0 0 22px rgba(77, 229, 237, 0.12);
+      color: var(--cyan);
+    }
+
+    .menu-button:active,
+    .mode-button:active,
+    .choice-button:active,
+    .primary-button:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .menu-detail {
+      min-height: 150px;
+      margin-top: 18px;
+      padding: 24px;
+      border-left: 3px solid var(--cyan);
+      border-radius: 0 10px 10px 0;
+      background: rgba(255, 255, 255, 0.035);
+    }
+
+    .menu-detail h2 {
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+    }
+
+    .menu-detail p {
+      max-width: 52ch;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .menu-detail .hint {
+      margin-top: 12px;
+      color: #71819e;
+      font-size: 0.82rem;
+    }
+
+    .info-panel {
+      margin-top: 20px;
+      padding: 18px;
+      border: 1px solid rgba(141, 171, 224, 0.16);
+      border-radius: 10px;
+      background: rgba(15, 25, 47, 0.8);
+    }
+
+    .info-panel h3 {
+      margin: 0 0 12px;
+      color: #e8efff;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .info-panel ul {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding-left: 20px;
+      color: var(--muted);
+      font-size: 0.83rem;
+      line-height: 1.5;
+    }
+
+    .controls-panel dl {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+    }
+
+    .controls-panel dl div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(141, 171, 224, 0.12);
+      font-size: 0.82rem;
+    }
+
+    .controls-panel dt {
+      color: #dce7fb;
+      font-weight: 750;
+    }
+
+    .controls-panel dd {
+      margin: 0;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .loadout {
+      margin-top: 22px;
+    }
+
+    .loadout-grid {
+      display: grid;
+      grid-template-columns: 1fr 0.85fr;
+      gap: 16px;
+    }
+
+    .choice-stack {
+      display: grid;
+      align-content: start;
+      gap: 14px;
+    }
+
+    .selection-group {
+      min-width: 0;
       margin: 0;
       padding: 0;
-      user-select: none;
-    }
-    body {
-      background: #0f172a;
-      color: #f8fafc;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-    #game-container {
-      position: relative;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-      border: 3px solid #334155;
-      border-radius: 12px;
-      overflow: hidden;
-    }
-    canvas {
-      display: block;
-      background: linear-gradient(180deg, #1e3a8a 0%, #3b82f6 65%, #93c5fd 100%);
+      border: 0;
     }
 
-    /* Loading Screen Styles */
-    #loading-screen {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at center, #1e3a8a 0%, #090d16 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      transition: opacity 0.45s ease;
-    }
-    #loading-screen.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-    .game-logo {
-      font-size: 46px;
-      font-weight: 900;
-      font-style: italic;
-      letter-spacing: 3px;
+    .selection-group legend {
+      margin-bottom: 8px;
+      color: #dce7fb;
+      font-size: 0.75rem;
+      font-weight: 850;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: #facc15;
-      text-shadow: 0 4px 0 #b45309, 0 8px 24px rgba(37, 99, 235, 0.9);
-      margin-bottom: 24px;
     }
-    .game-logo span {
-      color: #60a5fa;
-      text-shadow: 0 4px 0 #1d4ed8;
+
+    .drop-hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.55;
     }
-    .ring-spinner {
-      width: 64px;
-      height: 64px;
-      border: 8px solid #facc15;
-      border-top-color: #fef08a;
-      border-bottom-color: #ca8a04;
-      border-radius: 50%;
-      box-shadow: 0 0 20px rgba(250, 204, 21, 0.6), inset 0 0 10px rgba(250, 204, 21, 0.4);
-      animation: spinRing 0.85s linear infinite;
-      margin-bottom: 24px;
+
+    .choice-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
     }
-    @keyframes spinRing {
-      0% { transform: rotateY(0deg); }
-      100% { transform: rotateY(360deg); }
+
+    .choice-button {
+      min-width: 0;
+      min-height: 39px;
+      padding: 8px 6px;
+      border: 1px solid rgba(141, 171, 224, 0.22);
+      border-radius: 7px;
+      background: rgba(15, 25, 47, 0.9);
+      color: #b8c5dc;
+      cursor: pointer;
+      font-size: 0.76rem;
+      font-weight: 750;
+      transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
     }
-    .progress-track {
-      width: 340px;
-      height: 16px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 2px solid #3b82f6;
-      border-radius: 999px;
-      overflow: hidden;
+
+    .choice-button:hover,
+    .color-button:hover {
+      border-color: rgba(77, 229, 237, 0.75);
+    }
+
+    .choice-button[aria-pressed="true"] {
+      border-color: var(--cyan);
+      background: rgba(30, 104, 119, 0.28);
+      color: #fff;
+    }
+
+    .opponent-select {
+      margin-bottom: 16px;
+    }
+
+    .mode-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .mode-button,
+    .keybind-button {
+      min-height: 38px;
+      padding: 8px 12px;
+      border: 1px solid rgba(141, 171, 224, 0.24);
+      border-radius: 7px;
+      background: rgba(15, 25, 47, 0.9);
+      color: #cbd5e1;
+      cursor: pointer;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .mode-button[aria-pressed="true"] {
+      border-color: var(--cyan);
+      color: var(--cyan);
+      background: rgba(30, 104, 119, 0.28);
+    }
+
+    .keybind-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .keybind-grid > div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .keybind-button {
+      min-width: 46px;
+      min-height: 32px;
+      padding: 5px 8px;
+      color: #e8efff;
+    }
+
+    .keybind-button.pending {
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    .keybind-status {
+      margin: 0;
+      color: #8798b5;
+      font-size: 0.76rem;
+    }
+
+    .second-controls-title {
+      margin-top: 22px !important;
+    }
+
+    .fighter-preview {
+      display: grid;
+      min-height: 180px;
+      place-items: center;
+      align-content: center;
+      border: 1px solid rgba(141, 171, 224, 0.16);
+      border-radius: 10px;
+      background: radial-gradient(ellipse at 50% 70%, rgba(77, 229, 237, 0.1), transparent 70%);
+      text-align: center;
+    }
+
+    .preview-fighter {
+      width: 52px;
+      height: 100px;
+      color: var(--fighter-color, var(--cyan));
+      filter: drop-shadow(0 0 10px currentColor);
+    }
+
+    .fighter-preview p {
+      margin: 8px 0 0;
+      color: #dce7fb;
+      font-size: 0.78rem;
+      font-weight: 750;
+    }
+
+    .fighter-preview .color-label {
+      margin-top: 4px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .color-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .custom-color {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 750;
+      text-transform: uppercase;
+    }
+
+    .custom-color input {
+      width: 36px;
+      height: 30px;
       padding: 2px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 6px;
+      background: #10172a;
+      cursor: pointer;
+    }
+
+    .color-button {
+      width: 27px;
+      height: 27px;
+      padding: 0;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      background: var(--swatch-color);
+      cursor: pointer;
+      transition: transform 150ms ease, border-color 150ms ease;
+    }
+
+    .color-button[aria-pressed="true"] {
+      border-color: #fff;
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18), 0 0 14px var(--swatch-color);
+      transform: scale(1.08);
+    }
+
+    .selection-summary {
+      margin: 14px 0 0;
+      color: #8293b1;
+      font-size: 0.76rem;
+      text-align: right;
+    }
+
+    .cpu-setting {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px 14px;
+      margin-top: 18px;
+    }
+
+    .cpu-setting[hidden] {
+      display: none;
+    }
+
+    .cpu-setting label {
+      color: #dce7fb;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .cpu-setting output {
+      color: var(--cyan);
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .cpu-setting input {
+      grid-column: 1 / -1;
+      width: 100%;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .play-button {
+      position: sticky;
+      bottom: 8px;
+      z-index: 4;
+      display: block;
+      width: 100%;
+      margin-top: 18px;
+      box-shadow: 0 8px 30px rgba(20, 184, 207, 0.45);
+    }
+
+    .game-screen {
+      max-width: 980px;
+      max-height: calc(100vh - 24px);
+      overflow-y: auto;
+      padding: clamp(12px, 3vw, 24px);
+      border: 1px solid rgba(141, 171, 224, 0.2);
+      border-radius: 16px;
+      background: rgba(12, 19, 38, 0.94);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    .game-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
       margin-bottom: 12px;
     }
-    .progress-fill {
-      width: 0%;
-      height: 100%;
-      background: linear-gradient(90deg, #2563eb, #60a5fa, #facc15);
-      border-radius: 999px;
-      transition: width 0.12s ease-out;
-    }
-    #loading-status {
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      color: #93c5fd;
-      text-transform: uppercase;
-      min-height: 20px;
-    }
-    #start-btn {
-      display: none;
-      margin-top: 18px;
-      background: linear-gradient(180deg, #facc15 0%, #eab308 100%);
-      color: #0f172a;
-      border: 2px solid #fef08a;
-      padding: 12px 34px;
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(250, 204, 21, 0.45);
-      animation: pulseBtn 1.2s infinite;
-    }
-    #start-btn:hover {
-      transform: scale(1.05);
-    }
-    @keyframes pulseBtn {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.04); }
+
+    .game-header h1 {
+      margin: 0;
+      font-size: clamp(1.3rem, 4vw, 2rem);
     }
 
-    /* HUD & Game Over Styles */
-    #hud {
-      position: absolute;
-      bottom: 16px;
-      left: 0;
+    .game-header .eyebrow {
+      margin-bottom: 4px;
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+    }
+
+    .health-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .health-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 10px;
+      align-items: baseline;
+      color: #e8efff;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .health-card.cpu {
+      text-align: right;
+    }
+
+    .damage-number {
+      grid-row: span 2;
+      color: #fff;
+      font-size: clamp(1.7rem, 5vw, 2.5rem);
+      font-weight: 1000;
+      line-height: 1;
+      text-shadow: 0 0 16px rgba(77, 229, 237, 0.25);
+    }
+
+    .damage-number.cpu-damage {
+      color: #ff8296;
+      text-shadow: 0 0 16px rgba(255, 91, 131, 0.25);
+    }
+
+    .stock-readout {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 650;
+    }
+
+    .ult-meter {
+      display: grid;
+      grid-column: 1 / -1;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 8px;
+      color: #ffdf79;
+      font-size: 0.65rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .ult-track {
+      height: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 223, 121, 0.35);
+      border-radius: 999px;
+      background: rgba(8, 13, 27, 0.8);
+    }
+
+    .ult-fill {
+      width: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #ff9a4d, #fff1a8);
+      box-shadow: 0 0 10px rgba(255, 210, 96, 0.7);
+      transition: width 180ms ease;
+    }
+
+    .ult-fill.ready {
+      animation: ultReady 650ms ease-in-out infinite alternate;
+    }
+
+    @keyframes ultReady {
+      from { filter: brightness(1); }
+      to { filter: brightness(1.7); }
+    }
+
+    .arena-frame {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(141, 171, 224, 0.3);
+      border-radius: 10px;
+      background: #111827;
+      line-height: 0;
+      box-shadow: 0 0 28px rgba(77, 229, 237, 0.08);
+    }
+
+    #arena {
+      display: block;
       width: 100%;
+      height: auto;
+      aspect-ratio: 2 / 1;
+      touch-action: none;
+    }
+
+    .round-overlay {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 12px;
+      padding: 18px;
+      background: rgba(5, 9, 20, 0.78);
+      text-align: center;
+    }
+
+    .round-overlay[hidden] {
+      display: none;
+    }
+
+    .round-overlay h2 {
+      margin: 0 0 5px;
+      font-size: clamp(2rem, 7vw, 4rem);
+      text-transform: uppercase;
+    }
+
+    .overlay-actions {
       display: flex;
-      justify-content: space-around;
-      pointer-events: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .overlay-actions .primary-button {
+      min-width: 0;
+      padding: 12px 18px;
+      font-size: 0.8rem;
+    }
+
+    .game-hint {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .touch-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .control-button {
+      min-width: 54px;
+      min-height: 42px;
+      padding: 8px 12px;
+      border: 1px solid rgba(141, 171, 224, 0.32);
+      border-radius: 8px;
+      background: rgba(30, 45, 76, 0.9);
+      color: #e8efff;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 800;
+      touch-action: none;
+    }
+
+    .control-button.attack-control {
+      border-color: rgba(255, 91, 131, 0.55);
+      color: #ff9ab0;
+    }
+
+    @media (max-width: 520px) {
+      .menu-options {
+        grid-template-columns: 1fr;
+      }
+
+      .menu-button {
+        min-height: 68px;
+      }
+
+      .menu-detail {
+        min-height: 132px;
+      }
+
+      .loadout-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .fighter-preview {
+        min-height: 150px;
+      }
+
+      .fighters {
+        height: 120px;
+        margin-top: 28px;
+      }
+
+      .fighter {
+        height: 112px;
+      }
+
+      .health-row {
+        gap: 10px;
+      }
+
+      .game-hint {
+        font-size: 0.7rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell">
+    <section class="screen title-screen active" id="title-screen" aria-labelledby="game-title">
+      <p class="eyebrow">Ready to rumble?</p>
+      <h1 class="game-title" id="game-title">Stickman <span>Showdown</span></h1>
+      <p class="tagline">Tiny fighters. Big battles.</p>
+      <div class="fighters" aria-hidden="true">
+        <svg class="fighter blue" viewBox="0 0 70 140">
+          <circle cx="35" cy="18" r="13"></circle>
+          <path d="M35 32v48M35 46 12 61M35 47l22-17M35 80 17 119M35 80l24 35"></path>
+        </svg>
+        <svg class="fighter red" viewBox="0 0 70 140">
+          <circle cx="35" cy="18" r="13"></circle>
+          <path d="M35 32v48M35 46 12 61M35 47l22-17M35 80 17 119M35 80l24 35"></path>
+        </svg>
+      </div>
+      <button class="primary-button" id="start-button" type="button">Start</button>
+    </section>
+
+    <section class="screen menu-screen" id="main-menu" aria-labelledby="menu-title">
+      <header class="menu-header">
+        <h1 id="menu-title">Main Menu <span class="version-label">v0.7.0</span></h1>
+        <button class="back-button" id="title-button" type="button">← Title</button>
+      </header>
+      <nav class="menu-options" aria-label="Main menu">
+        <button class="menu-button" type="button" data-panel="fight" aria-pressed="true">Fight</button>
+        <button class="menu-button" type="button" data-panel="extra" aria-pressed="false">Extra</button>
+        <button class="menu-button" type="button" data-panel="settings" aria-pressed="false">Settings</button>
+      </nav>
+      <section class="menu-detail" id="menu-detail" aria-live="polite">
+        <h2 id="detail-title">Fight</h2>
+        <p id="detail-description">Pick an arena and fighter color; weapons fall into the fight.</p>
+        <p class="hint" id="detail-hint">Customize your fighter before jumping into the action.</p>
+        <div class="info-panel" id="extra-panel" hidden>
+          <h3>Latest update · v0.7.0</h3>
+          <ul>
+            <li>v0.7.0 · 2026-11-24 10:41 CST — Added Player 2 and editable controls; expanded weapons and healing drops; polished combat effects; fixed preview color, live control hints, and CPU edge recovery.</li>
+            <li>v0.5.0 · 2026-11-24 10:26 CST — Added six distinct weapons, healing drops, and improved pickup/effect visuals.</li>
+            <li>v0.4.0 · 2026-11-24 10:19 CST — Added local Player 2 mode and editable keybinds.</li>
+          </ul>
+          <h3 class="second-controls-title">Update history</h3>
+          <ul>
+            <li>v0.3.0 · 2026-11-24 — Falling weapon pickups, weapon dropping, and charged ultimates. (Time not recorded.)</li>
+            <li>v0.2.0 · 2026-11-24 — Multiple arenas, double-jumps, damage knockback, and stocks. (Time not recorded.)</li>
+            <li>v0.1.0 · 2026-11-24 — Start screen and Fight, Extra, and Settings menus. (Time not recorded.)</li>
+          </ul>
+        </div>
+        <div class="info-panel controls-panel" id="settings-panel" hidden>
+          <h3>Player 1 keybinds</h3>
+          <div class="keybind-grid">
+            <div><span>Move left</span><button class="keybind-button" data-player="p1" data-action="left" type="button">A</button></div>
+            <div><span>Move right</span><button class="keybind-button" data-player="p1" data-action="right" type="button">D</button></div>
+            <div><span>Jump</span><button class="keybind-button" data-player="p1" data-action="jump" type="button">W</button></div>
+            <div><span>Attack</span><button class="keybind-button" data-player="p1" data-action="attack" type="button">J</button></div>
+            <div><span>Special</span><button class="keybind-button" data-player="p1" data-action="special" type="button">K</button></div>
+            <div><span>Ultimate</span><button class="keybind-button" data-player="p1" data-action="ultimate" type="button">L</button></div>
+            <div><span>Drop weapon</span><button class="keybind-button" data-player="p1" data-action="drop" type="button">G</button></div>
+          </div>
+          <h3 class="second-controls-title">Player 2 keybinds</h3>
+          <div class="keybind-grid">
+            <div><span>Move left</span><button class="keybind-button" data-player="p2" data-action="left" type="button">←</button></div>
+            <div><span>Move right</span><button class="keybind-button" data-player="p2" data-action="right" type="button">→</button></div>
+            <div><span>Jump</span><button class="keybind-button" data-player="p2" data-action="jump" type="button">↑</button></div>
+            <div><span>Attack</span><button class="keybind-button" data-player="p2" data-action="attack" type="button">Num 1</button></div>
+            <div><span>Special</span><button class="keybind-button" data-player="p2" data-action="special" type="button">Num 2</button></div>
+            <div><span>Ultimate</span><button class="keybind-button" data-player="p2" data-action="ultimate" type="button">Num 3</button></div>
+            <div><span>Drop weapon</span><button class="keybind-button" data-player="p2" data-action="drop" type="button">Num 0</button></div>
+          </div>
+          <p class="keybind-status" id="keybind-status" aria-live="polite">Select a key to change it.</p>
+        </div>
+        <div class="loadout" id="fight-loadout">
+          <fieldset class="selection-group opponent-select">
+            <legend>Opponent</legend>
+            <div class="mode-list">
+              <button class="mode-button" type="button" data-mode="cpu" aria-pressed="true">CPU</button>
+              <button class="mode-button" type="button" data-mode="player2" aria-pressed="false">Player 2</button>
+            </div>
+          </fieldset>
+          <div class="loadout-grid">
+            <div class="choice-stack">
+              <fieldset class="selection-group">
+                <legend>Choose a level</legend>
+                <div class="choice-list">
+                  <button class="choice-button" type="button" data-choice-group="level" data-choice-value="Rooftops" aria-pressed="true">Rooftops</button>
+                  <button class="choice-button" type="button" data-choice-group="level" data-choice-value="Dojo" aria-pressed="false">Dojo</button>
+                  <button class="choice-button" type="button" data-choice-group="level" data-choice-value="Lava Pit" aria-pressed="false">Lava Pit</button>
+                </div>
+              </fieldset>
+              <fieldset class="selection-group">
+                <legend>Weapon drops</legend>
+                <p class="drop-hint">Start with fists. Swords, spears, hammers, axes, staffs, boomerangs, and healing pickups fall into the arena.</p>
+              </fieldset>
+            </div>
+            <div>
+              <div class="fighter-preview" id="fighter-preview" aria-live="polite">
+                <svg class="preview-fighter" viewBox="0 0 70 140" aria-hidden="true">
+                  <circle cx="35" cy="18" r="13"></circle>
+                  <path d="M35 32v48M35 46 12 61M35 47l22-17M35 80 17 119M35 80l24 35"></path>
+                </svg>
+                <p>Your fighter</p>
+                <p class="color-label" id="color-label">Color: Cyan</p>
+              </div>
+              <fieldset class="selection-group" style="margin-top: 14px;">
+                <legend>Choose a color</legend>
+                <div class="color-list">
+                  <button class="color-button" type="button" data-choice-group="color" data-choice-value="Cyan" data-color="#4de5ed" aria-label="Cyan fighter color" aria-pressed="true" style="--swatch-color: #4de5ed;"></button>
+                  <button class="color-button" type="button" data-choice-group="color" data-choice-value="Pink" data-color="#ff5b83" aria-label="Pink fighter color" aria-pressed="false" style="--swatch-color: #ff5b83;"></button>
+                  <button class="color-button" type="button" data-choice-group="color" data-choice-value="Gold" data-color="#ffd166" aria-label="Gold fighter color" aria-pressed="false" style="--swatch-color: #ffd166;"></button>
+                  <button class="color-button" type="button" data-choice-group="color" data-choice-value="Violet" data-color="#b58aff" aria-label="Violet fighter color" aria-pressed="false" style="--swatch-color: #b58aff;"></button>
+                  <button class="color-button" type="button" data-choice-group="color" data-choice-value="Green" data-color="#64e58b" aria-label="Green fighter color" aria-pressed="false" style="--swatch-color: #64e58b;"></button>
+                  <button class="color-button" type="button" data-choice-group="color" data-choice-value="Blue" data-color="#5a8dff" aria-label="Blue fighter color" aria-pressed="false" style="--swatch-color: #5a8dff;"></button>
+                  <button class="color-button" type="button" data-choice-group="color" data-choice-value="Orange" data-color="#ff914d" aria-label="Orange fighter color" aria-pressed="false" style="--swatch-color: #ff914d;"></button>
+                  <button class="color-button" type="button" data-choice-group="color" data-choice-value="White" data-color="#f0f4ff" aria-label="White fighter color" aria-pressed="false" style="--swatch-color: #f0f4ff;"></button>
+                </div>
+                <label class="custom-color" for="custom-color">Custom <input id="custom-color" type="color" value="#4de5ed" /></label>
+              </fieldset>
+            </div>
+          </div>
+          <p class="selection-summary" id="selection-summary" aria-live="polite">Rooftops · Cyan</p>
+          <div class="cpu-setting" id="cpu-setting">
+            <label for="cpu-level">CPU difficulty</label>
+            <output id="cpu-level-output" for="cpu-level">Level 5</output>
+            <input id="cpu-level" type="range" min="1" max="10" value="5" step="1" />
+          </div>
+          <button class="primary-button play-button" id="play-button" type="button">Play</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="screen game-screen" id="game-screen" aria-labelledby="fight-title">
+      <header class="game-header">
+        <div>
+          <p class="eyebrow" id="match-details">Rooftops · Sword</p>
+          <h1 id="fight-title">Fight!</h1>
+        </div>
+        <button class="back-button" id="quit-button" type="button">Quit Fight</button>
+      </header>
+      <div class="health-row" aria-label="Fighter health">
+        <div class="health-card">
+          <span>You</span>
+          <strong class="damage-number" id="player-damage">0%</strong>
+          <span class="stock-readout">Stocks <b id="player-stocks">3</b></span>
+          <div class="ult-meter"><span>ULT</span><div class="ult-track"><div class="ult-fill" id="player-ult"></div></div><b id="player-ult-label">0%</b></div>
+        </div>
+        <div class="health-card cpu">
+          <span><span id="opponent-name">CPU</span> <span id="cpu-level-label">5</span></span>
+          <strong class="damage-number cpu-damage" id="cpu-damage">0%</strong>
+          <span class="stock-readout">Stocks <b id="cpu-stocks">3</b></span>
+          <div class="ult-meter"><span>ULT</span><div class="ult-track"><div class="ult-fill" id="cpu-ult"></div></div><b id="cpu-ult-label">0%</b></div>
+        </div>
+      </div>
+      <div class="arena-frame">
+        <canvas id="arena" width="960" height="480" tabindex="0" aria-label="Fight arena. Use A and D or arrow keys to move, W, Up, or Space to jump, J to attack, and K for a special attack."></canvas>
+        <div class="round-overlay" id="round-overlay" hidden>
+          <h2 id="round-result">You Win!</h2>
+          <div class="overlay-actions">
+            <button class="primary-button" id="rematch-button" type="button">Rematch</button>
+            <button class="back-button" id="loadout-button" type="button">Change Loadout</button>
+          </div>
+        </div>
+      </div>
+      <div class="touch-controls" aria-label="Touch controls">
+        <button class="control-button" type="button" data-control="left">◀</button>
+        <button class="control-button" type="button" data-control="right">▶</button>
+        <button class="control-button" type="button" data-control="jump">Jump</button>
+        <button class="control-button attack-control" type="button" data-control="attack">Attack</button>
+        <button class="control-button attack-control" type="button" data-control="special">Special</button>
+        <button class="control-button attack-control" type="button" data-control="ultimate">Ult</button>
+        <button class="control-button" type="button" data-control="drop">Drop</button>
+      </div>
+      <p class="game-hint" id="game-hint">Move: A/D or ←/→ · Jump twice: W, ↑, or Space · Attack: J · Special: K · Ult: L when charged · Drop weapon: G</p>
+    </section>
+  </main>
+
+  <script>
+    const titleScreen = document.getElementById("title-screen");
+    const mainMenu = document.getElementById("main-menu");
+    const startButton = document.getElementById("start-button");
+    const titleButton = document.getElementById("title-button");
+    const menuButtons = Array.from(document.querySelectorAll(".menu-button"));
+    const detailTitle = document.getElementById("detail-title");
+    const detailDescription = document.getElementById("detail-description");
+    const detailHint = document.getElementById("detail-hint");
+    const fightLoadout = document.getElementById("fight-loadout");
+    const fighterPreview = document.getElementById("fighter-preview");
+    const colorLabel = document.getElementById("color-label");
+    const selectionSummary = document.getElementById("selection-summary");
+    const customColorInput = document.getElementById("custom-color");
+    const selections = { level: "Rooftops", color: "Cyan" };
+    const keybinds = {
+      p1: { left: "KeyA", right: "KeyD", jump: "KeyW", attack: "KeyJ", special: "KeyK", ultimate: "KeyL", drop: "KeyG" },
+      p2: { left: "ArrowLeft", right: "ArrowRight", jump: "ArrowUp", attack: "Numpad1", special: "Numpad2", ultimate: "Numpad3", drop: "Numpad0" }
+    };
+    let gameMode = "cpu";
+    let pendingKeybind = null;
+
+    const panels = {
+      fight: {
+        title: "Fight",
+        description: "Pick an arena and fighter color; weapons fall into the fight.",
+        hint: "Customize your fighter before jumping into the action."
+      },
+      extra: {
+        title: "Extra",
+        description: "This is where bonus modes, unlockables, and other surprises can live.",
+        hint: "Check the latest updates below."
+      },
+      settings: {
+        title: "Settings",
+        description: "Choose your controls and game preferences here.",
+        hint: "View the current keyboard and touch controls below."
+      }
+    };
+
+    startButton.addEventListener("click", () => {
+      titleScreen.classList.remove("active");
+      mainMenu.classList.add("active");
+      menuButtons[0].focus();
+    });
+
+    titleButton.addEventListener("click", () => {
+      mainMenu.classList.remove("active");
+      titleScreen.classList.add("active");
+      startButton.focus();
+    });
+
+    menuButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const panel = panels[button.dataset.panel];
+        menuButtons.forEach((item) => {
+          item.setAttribute("aria-pressed", String(item === button));
+        });
+        detailTitle.textContent = panel.title;
+        detailDescription.textContent = panel.description;
+        detailHint.textContent = panel.hint;
+        fightLoadout.hidden = button.dataset.panel !== "fight";
+        document.getElementById("extra-panel").hidden = button.dataset.panel !== "extra";
+        document.getElementById("settings-panel").hidden = button.dataset.panel !== "settings";
+      });
+    });
+
+    const cpuSetting = document.getElementById("cpu-setting");
+    const modeButtons = Array.from(document.querySelectorAll(".mode-button"));
+    modeButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        gameMode = button.dataset.mode;
+        modeButtons.forEach((modeButton) => {
+          modeButton.setAttribute("aria-pressed", String(modeButton === button));
+        });
+        cpuSetting.hidden = gameMode !== "cpu";
+        updateGameHint();
+      });
+    });
+
+    const keybindButtons = Array.from(document.querySelectorAll(".keybind-button"));
+    const keybindStatus = document.getElementById("keybind-status");
+    const gameHint = document.getElementById("game-hint");
+
+    function formatKey(code) {
+      if (code === "Space") return "Space";
+      if (code.startsWith("Key")) return code.slice(3);
+      if (code.startsWith("Digit")) return code.slice(5);
+      if (code.startsWith("Numpad")) return `Num ${code.slice(6)}`;
+      if (code === "ArrowLeft") return "←";
+      if (code === "ArrowRight") return "→";
+      if (code === "ArrowUp") return "↑";
+      if (code === "ArrowDown") return "↓";
+      return code;
+    }
+
+    function updateGameHint() {
+      const p1 = `P1: ${formatKey(keybinds.p1.left)}/${formatKey(keybinds.p1.right)} move, ${formatKey(keybinds.p1.jump)} jump, ${formatKey(keybinds.p1.attack)} attack`;
+      if (gameMode === "player2") {
+        const p1Moves = `${p1}, ${formatKey(keybinds.p1.special)} special, ${formatKey(keybinds.p1.ultimate)} ult, ${formatKey(keybinds.p1.drop)} drop`;
+        const p2 = `P2: ${formatKey(keybinds.p2.left)}/${formatKey(keybinds.p2.right)} move, ${formatKey(keybinds.p2.jump)} jump, ${formatKey(keybinds.p2.attack)} attack, ${formatKey(keybinds.p2.special)} special, ${formatKey(keybinds.p2.ultimate)} ult, ${formatKey(keybinds.p2.drop)} drop`;
+        gameHint.textContent = `${p1Moves} · ${p2}`;
+      } else {
+        gameHint.textContent = `${p1} · Special ${formatKey(keybinds.p1.special)} · Ult ${formatKey(keybinds.p1.ultimate)} · Drop ${formatKey(keybinds.p1.drop)}`;
+      }
+      document.getElementById("arena").setAttribute("aria-label", `Fight arena controls. ${gameHint.textContent}`);
+    }
+
+    function renderKeybinds() {
+      keybindButtons.forEach((button) => {
+        button.textContent = formatKey(keybinds[button.dataset.player][button.dataset.action]);
+      });
+      updateGameHint();
+    }
+
+    keybindButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        if (pendingKeybind) pendingKeybind.button.classList.remove("pending");
+        pendingKeybind = { button, player: button.dataset.player, action: button.dataset.action };
+        button.classList.add("pending");
+        keybindStatus.textContent = "Press a key to assign it. Escape cancels.";
+        button.focus();
+      });
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (!pendingKeybind) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.code === "Escape") {
+        pendingKeybind.button.classList.remove("pending");
+        pendingKeybind = null;
+        keybindStatus.textContent = "Key change cancelled.";
+        return;
+      }
+      if (event.code.startsWith("Shift") || event.code.startsWith("Control")
+        || event.code.startsWith("Alt") || event.code.startsWith("Meta")) {
+        keybindStatus.textContent = "Choose a regular key, not a modifier.";
+        return;
+      }
+
+      const conflict = Object.entries(keybinds).some(([player, actions]) =>
+        Object.entries(actions).some(([action, code]) =>
+          code === event.code && !(player === pendingKeybind.player && action === pendingKeybind.action)
+        )
+      );
+      if (conflict) {
+        keybindStatus.textContent = `${formatKey(event.code)} is already assigned. Choose another key.`;
+        return;
+      }
+
+      keybinds[pendingKeybind.player][pendingKeybind.action] = event.code;
+      pendingKeybind.button.classList.remove("pending");
+      pendingKeybind = null;
+      renderKeybinds();
+      keybindStatus.textContent = "Keybind updated.";
+    }, true);
+
+    renderKeybinds();
+
+    document.querySelectorAll(".choice-button, .color-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const group = button.dataset.choiceGroup;
+        selections[group] = button.dataset.choiceValue;
+        document.querySelectorAll("[data-choice-group]").forEach((option) => {
+          if (option.dataset.choiceGroup === group) {
+            option.setAttribute("aria-pressed", String(option === button));
+          }
+        });
+
+        if (group === "color") {
+          fighterPreview.style.setProperty("--fighter-color", button.dataset.color);
+          colorLabel.textContent = `Color: ${selections.color}`;
+          customColorInput.value = button.dataset.color;
+        }
+
+        selectionSummary.textContent = `${selections.level} · ${selections.color}`;
+      });
+    });
+
+    customColorInput.addEventListener("input", () => {
+      selections.color = "Custom";
+      fighterPreview.style.setProperty("--fighter-color", customColorInput.value);
+      colorLabel.textContent = "Color: Custom";
+      document.querySelectorAll(".color-button").forEach((button) => {
+        button.setAttribute("aria-pressed", "false");
+      });
+      selectionSummary.textContent = `${selections.level} · Custom`;
+    });
+
+    const gameScreen = document.getElementById("game-screen");
+    const playButton = document.getElementById("play-button");
+    const quitButton = document.getElementById("quit-button");
+    const rematchButton = document.getElementById("rematch-button");
+    const loadoutButton = document.getElementById("loadout-button");
+    const cpuLevelInput = document.getElementById("cpu-level");
+    const cpuLevelOutput = document.getElementById("cpu-level-output");
+    const cpuLevelLabel = document.getElementById("cpu-level-label");
+    const opponentName = document.getElementById("opponent-name");
+    const matchDetails = document.getElementById("match-details");
+    const playerDamageText = document.getElementById("player-damage");
+    const cpuDamageText = document.getElementById("cpu-damage");
+    const playerStocksText = document.getElementById("player-stocks");
+    const cpuStocksText = document.getElementById("cpu-stocks");
+    const playerUltFill = document.getElementById("player-ult");
+    const cpuUltFill = document.getElementById("cpu-ult");
+    const playerUltLabel = document.getElementById("player-ult-label");
+    const cpuUltLabel = document.getElementById("cpu-ult-label");
+    const roundOverlay = document.getElementById("round-overlay");
+    const roundResult = document.getElementById("round-result");
+    const arena = document.getElementById("arena");
+    const context = arena.getContext("2d");
+    const arenaWidth = arena.width;
+    const arenaHeight = arena.height;
+    const groundY = 405;
+    const blastZone = { left: -90, right: 1050, bottom: 555, top: -110 };
+    const keys = new Set();
+    const weaponStats = {
+      Fists: { damage: 8, reach: 70, cooldown: 0.32, specialDamage: 17, specialReach: 112, specialCooldown: 0.88 },
+      Sword: { damage: 12, reach: 94, cooldown: 0.42, specialDamage: 23, specialReach: 145, specialCooldown: 1.15 },
+      Spear: { damage: 10, reach: 130, cooldown: 0.48, specialDamage: 22, specialReach: 184, specialCooldown: 1.25 },
+      Hammer: { damage: 18, reach: 78, cooldown: 0.68, specialDamage: 31, specialReach: 116, specialCooldown: 1.45 },
+      Axe: { damage: 16, reach: 86, cooldown: 0.62, specialDamage: 30, specialReach: 132, specialCooldown: 1.4 },
+      Staff: { damage: 9, reach: 112, cooldown: 0.36, specialDamage: 19, specialReach: 164, specialCooldown: 1.05 },
+      Boomerang: { damage: 11, reach: 142, cooldown: 0.72, specialDamage: 21, specialReach: 210, specialCooldown: 1.5 }
+    };
+    const colorValues = {
+      Cyan: "#4de5ed",
+      Pink: "#ff5b83",
+      Gold: "#ffd166",
+      Violet: "#b58aff",
+      Green: "#64e58b",
+      Blue: "#5a8dff",
+      Orange: "#ff914d",
+      White: "#f0f4ff"
+    };
+    let activeConfig = null;
+    let cpuCooldown = 1;
+    let cpuAttackCount = 0;
+    let lastFrameTime = 0;
+    let effects = [];
+    let sparks = [];
+    let items = [];
+    let itemDropTimer = 2.5;
+    let cameraShake = 0;
+    let playerCombo = 0;
+    let comboTimeout = 0;
+    let player;
+    let cpu;
+    const ambience = Array.from({ length: 34 }, () => ({
+      x: Math.random() * arenaWidth,
+      y: Math.random() * (groundY - 30),
+      size: 1 + Math.random() * 2.5,
+      speed: 8 + Math.random() * 26,
+      phase: Math.random() * Math.PI * 2
+    }));
+
+    const makeFighter = (x, facing) => ({
+      x,
+      y: groundY,
+      vx: 0,
+      vy: 0,
+      damage: 0,
+      stocks: 3,
+      jumpsLeft: 2,
+      facing,
+      attackTime: 0,
+      attackKind: "normal",
+      ultCharge: 0,
+      walkTime: 0,
+      idleTime: 0,
+      moving: false,
+      dustTimer: 0,
+      hitstun: 0,
+      weapon: "Fists",
+      attackCooldown: 0,
+      specialCooldown: 0,
+      invulnerable: 0
+    });
+
+    cpuLevelInput.addEventListener("input", () => {
+      cpuLevelOutput.textContent = `Level ${cpuLevelInput.value}`;
+    });
+
+    function updateScoreboard() {
+      playerDamageText.textContent = `${player.damage}%`;
+      cpuDamageText.textContent = `${cpu.damage}%`;
+      playerStocksText.textContent = String(player.stocks);
+      cpuStocksText.textContent = String(cpu.stocks);
+      playerUltFill.style.width = `${player.ultCharge}%`;
+      cpuUltFill.style.width = `${cpu.ultCharge}%`;
+      playerUltFill.classList.toggle("ready", player.ultCharge >= 100);
+      cpuUltFill.classList.toggle("ready", cpu.ultCharge >= 100);
+      playerUltLabel.textContent = `${player.ultCharge}%`;
+      cpuUltLabel.textContent = `${cpu.ultCharge}%`;
+      opponentName.textContent = gameMode === "player2" ? "Player 2" : "CPU";
+      cpuLevelLabel.hidden = gameMode !== "cpu";
+    }
+
+    function updateMatchDetails() {
+      const opponent = gameMode === "player2" ? "Player 2" : "CPU";
+      matchDetails.textContent = `${activeConfig.level} · You: ${player.weapon} · ${opponent}: ${cpu.weapon}`;
+    }
+
+    function startFight() {
+      activeConfig = {
+        level: selections.level,
+        color: selections.color === "Custom" ? customColorInput.value : colorValues[selections.color],
+        cpuLevel: Number(cpuLevelInput.value),
+        mode: gameMode
+      };
+      player = makeFighter(250, 1);
+      cpu = makeFighter(710, -1);
+      cpuCooldown = 1.1;
+      cpuAttackCount = 0;
+      effects = [];
+      sparks = [];
+      items = [];
+      itemDropTimer = 2.5;
+      cameraShake = 0;
+      playerCombo = 0;
+      comboTimeout = 0;
+      keys.clear();
+      lastFrameTime = 0;
+      roundOverlay.hidden = true;
+      cpuLevelLabel.textContent = activeConfig.mode === "cpu" ? String(activeConfig.cpuLevel) : "";
+      cpuLevelOutput.textContent = `Level ${activeConfig.cpuLevel}`;
+      updateMatchDetails();
+      updateScoreboard();
+      mainMenu.classList.remove("active");
+      gameScreen.classList.add("active");
+      gameScreen.scrollTop = 0;
+      arena.focus();
+      drawArena();
+      gameActive = true;
+      requestAnimationFrame(gameLoop);
+    }
+
+    let gameActive = false;
+
+    function returnToMenu() {
+      gameActive = false;
+      keys.clear();
+      gameScreen.classList.remove("active");
+      mainMenu.classList.add("active");
+      roundOverlay.hidden = true;
+      menuButtons[0].click();
+      playButton.focus();
+    }
+
+    function finishFight(won) {
+      gameActive = false;
+      roundResult.textContent = activeConfig.mode === "player2"
+        ? (won ? "Player 1 Wins!" : "Player 2 Wins!")
+        : (won ? "You Win!" : "CPU Wins!");
+      roundResult.style.color = won ? activeConfig.color : "#ff718f";
+      roundOverlay.hidden = false;
+      rematchButton.focus();
+    }
+
+    function jump(fighter) {
+      if (gameActive && fighter.jumpsLeft > 0) {
+        fighter.vy = fighter.jumpsLeft === 2 ? -640 : -570;
+        fighter.jumpsLeft -= 1;
+      }
+    }
+
+    function loseStock(fighter) {
+      fighter.stocks -= 1;
+      fighter.damage = 0;
+      if (fighter.stocks <= 0) {
+        updateScoreboard();
+        finishFight(fighter === cpu);
+        return;
+      }
+
+      fighter.x = fighter === player ? 250 : 710;
+      fighter.y = groundY;
+      fighter.vx = 0;
+      fighter.vy = 0;
+      fighter.jumpsLeft = 2;
+      fighter.invulnerable = 1.8;
+      cameraShake = 18;
+      effects.push({
+        x: fighter.x,
+        y: fighter.y - 100,
+        color: fighter === player ? activeConfig.color : "#ff6685",
+        life: 0.9,
+        damage: 0,
+        special: false,
+        message: "STOCK LOST"
+      });
+      updateScoreboard();
+    }
+
+    function attack(attacker, target, special, isCpu) {
+      if (!gameActive) return;
+      const stats = weaponStats[attacker.weapon];
+      const cooldownKey = special ? "specialCooldown" : "attackCooldown";
+      if (attacker[cooldownKey] > 0) return;
+
+      attacker[cooldownKey] = special ? stats.specialCooldown : stats.cooldown;
+      attacker.attackTime = special ? 0.42 : 0.26;
+      attacker.attackKind = special ? "special" : "normal";
+      const direction = target.x >= attacker.x ? 1 : -1;
+      attacker.facing = direction;
+      const reach = special ? stats.specialReach : stats.reach;
+      const damage = special ? stats.specialDamage : stats.damage;
+      const inReach = Math.abs(target.x - attacker.x) <= reach + 16;
+      const targetIsCloseVertically = Math.abs(target.y - attacker.y) <= 128;
+
+      if (!target.invulnerable && inReach && targetIsCloseVertically) {
+        const difficultyScale = isCpu ? 0.45 + activeConfig.cpuLevel * 0.075 : 1;
+        const damageDealt = Math.round(damage * difficultyScale);
+        target.damage += damageDealt;
+        attacker.ultCharge = Math.min(100, attacker.ultCharge + Math.round(damageDealt * 2 + (special ? 12 : 5)));
+        const attackerColor = attacker === player ? activeConfig.color : "#ff6685";
+        const knockback = (special ? 250 : 170) + target.damage * 3.1 + damageDealt * 5;
+        target.vx += direction * knockback;
+        target.vy = Math.min(target.vy, -(special ? 230 : 160) - knockback * 0.55);
+        target.hitstun = 0.55 + target.damage * 0.006 + (special ? 0.22 : 0);
+        target.invulnerable = 0.22;
+        cameraShake = Math.max(cameraShake, special ? 12 : 6);
+        if (attacker === player) {
+          playerCombo = comboTimeout > 0 ? playerCombo + 1 : 1;
+          comboTimeout = 1.15;
+        }
+        effects.push({
+          x: target.x,
+          y: target.y - 64,
+          color: attackerColor,
+          life: 0.42,
+          damage: damageDealt,
+          special,
+          message: null
+        });
+        const sparkCount = special ? 18 : 10;
+        for (let i = 0; i < sparkCount; i += 1) {
+          const angle = (Math.PI * 2 * i) / sparkCount + Math.random() * 0.3;
+          const speed = 80 + Math.random() * (special ? 260 : 170);
+          sparks.push({
+            x: target.x,
+            y: target.y - 64,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - (special ? 90 : 30),
+            color: special ? "#fff0a8" : attackerColor,
+            life: 0.25 + Math.random() * 0.25,
+            size: special ? 3 + Math.random() * 4 : 2 + Math.random() * 3
+          });
+        }
+        updateScoreboard();
+      }
+    }
+
+    function dropWeapon(fighter) {
+      if (!gameActive || fighter.weapon === "Fists") return;
+      items.push({
+        x: fighter.x + fighter.facing * 38,
+        y: fighter.y - 56,
+        vy: -85,
+        weapon: fighter.weapon,
+        spin: 0,
+        grounded: false,
+        ignorePlayer: 0.55
+      });
+      fighter.weapon = "Fists";
+      effects.push({
+        x: fighter.x,
+        y: fighter.y - 100,
+        color: fighter === player ? activeConfig.color : "#ff6685",
+        life: 0.65,
+        damage: 0,
+        special: false,
+        message: "DROPPED!"
+      });
+      updateMatchDetails();
+    }
+
+    function useUltimate(attacker, target) {
+      if (!gameActive || attacker.ultCharge < 100) return;
+      attacker.attackTime = 0.78;
+      attacker.attackKind = "ultimate";
+      attacker.specialCooldown = Math.max(attacker.specialCooldown, 0.45);
+      const direction = target.x >= attacker.x ? 1 : -1;
+      attacker.facing = direction;
+      if (Math.abs(target.x - attacker.x) > 245 || Math.abs(target.y - attacker.y) > 175 || target.invulnerable) {
+        effects.push({
+          x: attacker.x,
+          y: attacker.y - 100,
+          color: "#fff0a8",
+          life: 0.7,
+          damage: 0,
+          special: false,
+          message: "GET CLOSER!"
+        });
+        return;
+      }
+
+      attacker.ultCharge = 0;
+      const damage = 34;
+      target.damage += damage;
+      const knockback = 350 + target.damage * 3.4;
+      target.vx += direction * knockback;
+      target.vy = Math.min(target.vy, -330 - knockback * 0.48);
+      target.hitstun = 0.85 + target.damage * 0.004;
+      target.invulnerable = 0.3;
+      cameraShake = 24;
+      playerCombo = attacker === player ? playerCombo + 1 : playerCombo;
+      effects.push({
+        x: target.x,
+        y: target.y - 70,
+        color: "#fff0a8",
+        life: 0.8,
+        damage,
+        special: true,
+        message: "ULT! +34%"
+      });
+      for (let i = 0; i < 32; i += 1) {
+        const angle = (Math.PI * 2 * i) / 32;
+        const speed = 120 + Math.random() * 320;
+        sparks.push({
+          x: target.x,
+          y: target.y - 65,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 70,
+          color: i % 2 ? (attacker === player ? activeConfig.color : "#ff6685") : "#fff0a8",
+          life: 0.3 + Math.random() * 0.4,
+          size: 3 + Math.random() * 5
+        });
+      }
+      updateScoreboard();
+    }
+
+    function getPlatforms() {
+      const layouts = {
+        Rooftops: [
+          { x: 150, y: 306, width: 205 },
+          { x: 380, y: 250, width: 200 },
+          { x: 605, y: 306, width: 205 }
+        ],
+        Dojo: [
+          { x: 118, y: 294, width: 190 },
+          { x: 385, y: 235, width: 190 },
+          { x: 652, y: 294, width: 190 }
+        ],
+        "Lava Pit": [
+          { x: 95, y: 320, width: 175 },
+          { x: 310, y: 276, width: 150 },
+          { x: 500, y: 276, width: 150 },
+          { x: 690, y: 320, width: 175 }
+        ]
+      };
+      return [{ x: 72, y: groundY, width: 816 }, ...(layouts[activeConfig.level] || [])];
+    }
+
+    function updateFighter(fighter, delta) {
+      const previousY = fighter.y;
+      fighter.x += fighter.vx * delta;
+      fighter.vx *= Math.pow(fighter.hitstun > 0 ? 0.97 : 0.86, delta * 60);
+      fighter.hitstun = Math.max(0, fighter.hitstun - delta);
+      fighter.y += fighter.vy * delta;
+      fighter.vy += 1750 * delta;
+      let landed = false;
+      if (fighter.vy >= 0) {
+        const platform = getPlatforms().find((surface) =>
+          previousY <= surface.y && fighter.y >= surface.y
+          && fighter.x >= surface.x - 18 && fighter.x <= surface.x + surface.width + 18
+        );
+        if (platform) {
+          landed = previousY < platform.y;
+          fighter.y = platform.y;
+          fighter.vy = 0;
+          fighter.jumpsLeft = 2;
+        }
+      }
+      if (landed) emitDust(fighter.x, fighter.y - 3, "#e5f7ff", 9);
+      fighter.attackTime = Math.max(0, fighter.attackTime - delta);
+      fighter.attackCooldown = Math.max(0, fighter.attackCooldown - delta);
+      fighter.specialCooldown = Math.max(0, fighter.specialCooldown - delta);
+      fighter.invulnerable = Math.max(0, fighter.invulnerable - delta);
+      fighter.idleTime += delta;
+      fighter.dustTimer -= delta;
+      if (fighter.moving && fighter.vy === 0 && fighter.dustTimer <= 0) {
+        emitDust(fighter.x - fighter.facing * 10, fighter.y - 4, "#d5e8ff", 3);
+        fighter.dustTimer = 0.1;
+      }
+      if (fighter.x < blastZone.left || fighter.x > blastZone.right
+        || fighter.y < blastZone.top || fighter.y > blastZone.bottom) {
+        loseStock(fighter);
+      }
+    }
+
+    function emitDust(x, y, color, count) {
+      for (let i = 0; i < count; i += 1) {
+        sparks.push({
+          x: x + (Math.random() - 0.5) * 18,
+          y,
+          vx: (Math.random() - 0.5) * 120,
+          vy: -25 - Math.random() * 70,
+          color,
+          life: 0.2 + Math.random() * 0.18,
+          size: 1.5 + Math.random() * 3
+        });
+      }
+    }
+
+    function updateGame(delta) {
+      const moveLeft = keys.has("p1:left");
+      const moveRight = keys.has("p1:right");
+      const moveDirection = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
+      player.vx += moveDirection * 1250 * delta;
+      player.moving = Math.abs(player.vx) > 24;
+      if (player.moving) player.walkTime += delta * 13;
+      if (moveDirection !== 0) player.facing = moveDirection;
+      updateFighter(player, delta);
+
+      const distance = player.x - cpu.x;
+      if (activeConfig.mode === "cpu") {
+        cpu.facing = distance < 0 ? -1 : 1;
+        const cpuReach = weaponStats[cpu.weapon].reach;
+        const approachDistance = Math.max(70, cpuReach * 0.72);
+        cpu.moving = Math.abs(distance) > approachDistance && cpu.hitstun <= 0;
+        if (cpu.hitstun <= 0) {
+          const cpuSpeed = 72 + activeConfig.cpuLevel * 16;
+          let desiredVelocity = Math.abs(distance) > approachDistance ? Math.sign(distance) * cpuSpeed : 0;
+          if (cpu.x < 130) desiredVelocity = cpuSpeed;
+          if (cpu.x > 830) desiredVelocity = -cpuSpeed;
+          cpu.vx += (desiredVelocity - cpu.vx) * Math.min(1, delta * 8);
+          if (cpu.y > groundY + 12 && cpu.jumpsLeft > 0) {
+            cpu.vy = -570;
+            cpu.jumpsLeft -= 1;
+            cpu.vx = cpu.x < arenaWidth / 2 ? Math.max(cpu.vx, 150) : Math.min(cpu.vx, -150);
+          }
+        }
+      } else {
+        const p2Left = keys.has("p2:left");
+        const p2Right = keys.has("p2:right");
+        const p2Direction = (p2Right ? 1 : 0) - (p2Left ? 1 : 0);
+        cpu.vx += p2Direction * 1250 * delta;
+        cpu.moving = Math.abs(cpu.vx) > 24;
+        if (cpu.moving) cpu.walkTime += delta * 13;
+        if (p2Direction !== 0) cpu.facing = p2Direction;
+        else cpu.facing = player.x < cpu.x ? -1 : 1;
+      }
+      updateFighter(cpu, delta);
+
+      if (activeConfig.mode === "cpu") {
+        const cpuReach = weaponStats[cpu.weapon].reach;
+        cpuCooldown -= delta;
+        if (cpuCooldown <= 0 && Math.abs(distance) <= cpuReach + 28) {
+          cpuAttackCount += 1;
+          if (cpu.ultCharge >= 100 && Math.abs(distance) <= 245) {
+            useUltimate(cpu, player);
+          } else {
+            const special = activeConfig.cpuLevel >= 4 && cpuAttackCount % 3 === 0;
+            attack(cpu, player, special, true);
+          }
+          if (activeConfig.cpuLevel >= 5 && cpu.jumpsLeft > 0 && cpu.y > player.y + 55) {
+            cpu.vy = cpu.jumpsLeft === 2 ? -610 : -540;
+            cpu.jumpsLeft -= 1;
+          }
+          cpuCooldown = Math.max(0.58, 1.85 - activeConfig.cpuLevel * 0.105);
+        }
+      }
+
+      updateItems(delta);
+      effects = effects.filter((effect) => {
+        effect.life -= delta;
+        return effect.life > 0;
+      });
+      sparks = sparks.filter((spark) => {
+        spark.x += spark.vx * delta;
+        spark.y += spark.vy * delta;
+        spark.vy += 520 * delta;
+        spark.life -= delta;
+        return spark.life > 0;
+      });
+      comboTimeout = Math.max(0, comboTimeout - delta);
+      if (comboTimeout === 0) playerCombo = 0;
+      cameraShake = Math.max(0, cameraShake - delta * 34);
+    }
+
+    function updateItems(delta) {
+      itemDropTimer -= delta;
+      if (itemDropTimer <= 0 && items.length < 3) {
+        const weapons = ["Sword", "Spear", "Hammer", "Axe", "Staff", "Boomerang"];
+        const healing = Math.random() < 0.28;
+        items.push({
+          x: 110 + Math.random() * (arenaWidth - 220),
+          y: -24,
+          vy: 30,
+          kind: healing ? "heal" : "weapon",
+          weapon: weapons[Math.floor(Math.random() * weapons.length)],
+          spin: Math.random() * Math.PI * 2,
+          grounded: false
+        });
+        itemDropTimer = 4.5 + Math.random() * 2.5;
+      }
+
+      items = items.filter((item) => {
+        item.ignorePlayer = Math.max(0, (item.ignorePlayer || 0) - delta);
+        if (!item.grounded) {
+          const previousY = item.y;
+          item.vy += 750 * delta;
+          item.y += item.vy * delta;
+          const platform = getPlatforms().find((surface) =>
+            previousY <= surface.y && item.y >= surface.y && item.x >= surface.x && item.x <= surface.x + surface.width
+          );
+          if (platform) {
+            item.y = platform.y - 23;
+            item.vy = 0;
+            item.grounded = true;
+          }
+        }
+        item.spin += delta * 2.5;
+
+        for (const fighter of [player, cpu]) {
+          if (item.ignorePlayer === 0 && Math.abs(fighter.x - item.x) < 42
+            && Math.abs((fighter.y - 48) - item.y) < 50) {
+            const message = item.kind === "heal" ? "HEAL +25%" : item.weapon.toUpperCase();
+            if (item.kind === "heal") {
+              fighter.damage = Math.max(0, fighter.damage - 25);
+              fighter.ultCharge = Math.min(100, fighter.ultCharge + 10);
+            } else {
+              fighter.weapon = item.weapon;
+            }
+            effects.push({
+              x: fighter.x,
+              y: fighter.y - 100,
+              color: item.kind === "heal" ? "#8affbc" : (fighter === player ? activeConfig.color : "#ff6685"),
+              life: 0.85,
+              damage: 0,
+              special: false,
+              message: `${message}!`
+            });
+            updateMatchDetails();
+            updateScoreboard();
+            return false;
+          }
+        }
+        return item.y < arenaHeight + 20;
+      });
+    }
+
+    function drawBackground() {
+      const palettes = {
+        Rooftops: ["#101b43", "#356a91", "#172139"],
+        Dojo: ["#4c283d", "#d78052", "#422d3a"],
+        "Lava Pit": ["#1c1027", "#873c37", "#2b1224"]
+      };
+      const palette = palettes[activeConfig.level] || palettes.Rooftops;
+      const gradient = context.createLinearGradient(0, 0, 0, arenaHeight);
+      gradient.addColorStop(0, palette[0]);
+      gradient.addColorStop(0.72, palette[1]);
+      gradient.addColorStop(1, palette[2]);
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, arenaWidth, arenaHeight);
+
+      if (activeConfig.level === "Rooftops") {
+        context.fillStyle = "rgba(8, 15, 34, 0.55)";
+        for (let i = 0; i < 12; i += 1) {
+          const x = i * 86;
+          const height = 80 + (i * 43) % 135;
+          context.fillRect(x, groundY - height, 62, height);
+          context.fillStyle = "rgba(116, 211, 231, 0.32)";
+          for (let row = 0; row < 3; row += 1) {
+            context.fillRect(x + 12, groundY - height + 18 + row * 22, 7, 9);
+            context.fillRect(x + 34, groundY - height + 18 + row * 22, 7, 9);
+          }
+          context.fillStyle = "rgba(8, 15, 34, 0.55)";
+        }
+      } else if (activeConfig.level === "Dojo") {
+        context.fillStyle = "rgba(255, 215, 160, 0.22)";
+        context.beginPath();
+        context.arc(760, 112, 52, 0, Math.PI * 2);
+        context.fill();
+        context.fillStyle = "rgba(48, 25, 43, 0.55)";
+        for (let x = 70; x < arenaWidth; x += 190) {
+          context.fillRect(x, 210, 14, groundY - 210);
+        }
+        context.fillRect(35, 205, arenaWidth - 70, 12);
+      } else {
+        context.fillStyle = "rgba(255, 132, 76, 0.24)";
+        for (let i = 0; i < 10; i += 1) {
+          context.beginPath();
+          context.arc(45 + i * 102, 280 + (i % 3) * 28, 2 + i % 3, 0, Math.PI * 2);
+          context.fill();
+        }
+        context.fillStyle = "rgba(29, 10, 25, 0.62)";
+        context.beginPath();
+        context.moveTo(0, groundY);
+        for (let x = 0; x <= arenaWidth; x += 80) {
+          context.lineTo(x, groundY - (x % 160 === 0 ? 46 : 14));
+        }
+        context.lineTo(arenaWidth, groundY);
+        context.fill();
+      }
+
+      context.fillStyle = activeConfig.level === "Lava Pit" ? "#501e2c" : "#192942";
+      context.fillRect(0, groundY, arenaWidth, arenaHeight - groundY);
+      context.fillStyle = activeConfig.level === "Lava Pit" ? "#ff784f" : "#91e5e3";
+      context.fillRect(0, groundY, arenaWidth, 4);
+      context.fillStyle = "rgba(255, 255, 255, 0.08)";
+      context.fillRect(0, groundY + 13, arenaWidth, 2);
+
+      getPlatforms().forEach((platform) => {
+        const depth = platform.y === groundY ? 24 : 14;
+        context.fillStyle = "rgba(5, 10, 23, 0.92)";
+        context.fillRect(platform.x, platform.y, platform.width, depth);
+        context.fillStyle = activeConfig.level === "Lava Pit" ? "#ff784f" : "#91e5e3";
+        context.fillRect(platform.x, platform.y, platform.width, 4);
+        context.fillStyle = "rgba(210, 230, 255, 0.12)";
+        context.fillRect(platform.x + 5, platform.y + 7, Math.max(0, platform.width - 10), 2);
+      });
+
+      const ambientColor = activeConfig.level === "Lava Pit" ? "#ff9c54" : "#c8faff";
+      ambience.forEach((particle) => {
+        const twinkle = 0.24 + (Math.sin(performance.now() * 0.002 + particle.phase) + 1) * 0.22;
+        context.globalAlpha = twinkle;
+        context.fillStyle = ambientColor;
+        context.beginPath();
+        context.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+        context.fill();
+      });
+      context.globalAlpha = 1;
+    }
+
+    function drawItem(item) {
+      context.save();
+      context.translate(item.x, item.y);
+      context.rotate(Math.sin(item.spin) * 0.16);
+      context.shadowBlur = 20;
+      context.shadowColor = item.kind === "heal" ? "#8affbc" : "#ffd166";
+      context.fillStyle = "rgba(10, 17, 33, 0.92)";
+      context.strokeStyle = item.kind === "heal" ? "#8affbc" : "#ffd166";
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(0, 0, 22 + Math.sin(item.spin * 2) * 2, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.shadowBlur = 0;
+      context.fillStyle = item.kind === "heal" ? "#baffd1" : "#fff1bd";
+      context.font = "900 8px Segoe UI";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(item.kind === "heal" ? "HEAL +" : item.weapon.toUpperCase(), 0, 1);
+      context.restore();
+    }
+
+    function drawWeapon(weapon, special) {
+      if (weapon === "Fists") return;
+      context.save();
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.strokeStyle = special ? "#fff0a8" : "#eaf2ff";
+      context.fillStyle = "#facc72";
+      context.lineWidth = special ? 7 : 5;
+      if (weapon === "Sword") {
+        context.beginPath();
+        context.moveTo(26, -50);
+        context.lineTo(special ? 78 : 51, special ? -48 : -78);
+        context.stroke();
+        context.strokeStyle = "#facc72";
+        context.beginPath();
+        context.moveTo(31, -59);
+        context.lineTo(special ? 39 : 42, -49);
+        context.stroke();
+      } else if (weapon === "Spear") {
+        context.beginPath();
+        context.moveTo(26, -52);
+        context.lineTo(special ? 95 : 75, special ? -52 : -57);
+        context.stroke();
+        context.fillStyle = "#eaf2ff";
+        context.beginPath();
+        context.moveTo(special ? 97 : 77, special ? -52 : -57);
+        context.lineTo(special ? 84 : 66, special ? -60 : -64);
+        context.lineTo(special ? 85 : 68, special ? -44 : -53);
+        context.fill();
+      } else if (weapon === "Hammer") {
+        context.strokeStyle = "#bd8b5a";
+        context.beginPath();
+        context.moveTo(27, -50);
+        context.lineTo(special ? 40 : 48, special ? -86 : -74);
+        context.stroke();
+        context.fillStyle = "#d9e2f1";
+        context.fillRect(special ? 29 : 40, special ? -98 : -85, special ? 28 : 20, special ? 20 : 15);
+      } else if (weapon === "Axe") {
+        context.strokeStyle = "#9c6d45";
+        context.beginPath();
+        context.moveTo(27, -50);
+        context.lineTo(special ? 51 : 45, special ? -82 : -70);
+        context.stroke();
+        context.fillStyle = "#dbe6f5";
+        context.beginPath();
+        context.moveTo(special ? 47 : 43, special ? -88 : -77);
+        context.lineTo(special ? 70 : 65, special ? -79 : -71);
+        context.lineTo(special ? 57 : 54, special ? -58 : -56);
+        context.closePath();
+        context.fill();
+      } else if (weapon === "Staff") {
+        context.strokeStyle = "#a579e8";
+        context.lineWidth = 6;
+        context.beginPath();
+        context.moveTo(27, -48);
+        context.lineTo(special ? 78 : 68, special ? -96 : -22);
+        context.stroke();
+      } else if (weapon === "Boomerang") {
+        context.strokeStyle = "#ffcf6e";
+        context.lineWidth = 7;
+        context.beginPath();
+        context.arc(50, -55, special ? 24 : 18, -1.2, 1.2);
+        context.stroke();
+      }
+      context.restore();
+    }
+
+    function drawFighter(fighter, color, isCpu) {
+      context.save();
+      const idleBob = !fighter.moving && fighter.vy === 0 && fighter.attackTime <= 0
+        ? Math.sin(fighter.idleTime * 4) * 2
+        : 0;
+      const airborne = fighter.vy !== 0;
+      const isAttacking = fighter.attackTime > 0;
+      const ultimate = isAttacking && fighter.attackKind === "ultimate";
+      const special = isAttacking && (fighter.attackKind === "special" || ultimate);
+      const lean = ultimate ? 0.28 : (special ? 0.2 : (isAttacking ? 0.1 : 0));
+      const stride = fighter.moving && !airborne ? Math.sin(fighter.walkTime) * 11 : 0;
+      const rearArmSwing = fighter.moving && !airborne ? Math.sin(fighter.walkTime + Math.PI) * 8 : 0;
+      const legKneeY = airborne ? -17 : -4;
+      const frontKneeX = airborne ? 9 : -15 + stride;
+      const rearKneeX = airborne ? -11 : 17 - stride;
+
+      const shadowSurface = getPlatforms()
+        .filter((platform) => platform.y >= fighter.y && fighter.x >= platform.x - 12 && fighter.x <= platform.x + platform.width + 12)
+        .sort((a, b) => a.y - b.y)[0];
+      const shadowY = shadowSurface ? shadowSurface.y + 5 : groundY + 5;
+      const shadowHeight = Math.max(0, shadowY - fighter.y);
+      const shadowOpacity = Math.max(0.08, 0.34 - shadowHeight / 520);
+      context.globalAlpha = shadowOpacity;
+      context.fillStyle = "#050811";
+      context.beginPath();
+      context.ellipse(fighter.x, shadowY, Math.max(8, 24 - shadowHeight * 0.035), 4, 0, 0, Math.PI * 2);
+      context.fill();
+      context.globalAlpha = 1;
+
+      context.translate(fighter.x, fighter.y + idleBob);
+      context.scale(fighter.facing, 1);
+      context.rotate(lean);
+      context.globalAlpha = fighter.invulnerable > 0 && Math.floor(fighter.invulnerable * 28) % 2 === 0 ? 0.45 : 1;
+      if (fighter.hitstun > 0.08 && Math.abs(fighter.vx) > 180) {
+        context.save();
+        context.globalAlpha *= Math.min(0.7, fighter.hitstun);
+        context.strokeStyle = color;
+        context.lineWidth = 2;
+        for (let i = 0; i < 4; i += 1) {
+          const offset = (i - 1.5) * 11;
+          context.beginPath();
+          context.moveTo(-fighter.facing * (25 + i * 6), -48 + offset);
+          context.lineTo(-fighter.facing * (45 + i * 9), -48 + offset);
+          context.stroke();
+        }
+        context.restore();
+        context.globalAlpha = fighter.invulnerable > 0 && Math.floor(fighter.invulnerable * 28) % 2 === 0 ? 0.45 : 1;
+      }
+      context.strokeStyle = color;
+      context.lineWidth = 7;
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      const attackHandX = isAttacking ? (special ? 42 : 31) : 19;
+      const attackHandY = isAttacking ? (special ? -34 : -54) : -48;
+
+      context.beginPath();
+      context.arc(0, -88, 13, 0, Math.PI * 2);
+      context.moveTo(0, -75);
+      context.lineTo(0, -39);
+      context.moveTo(0, -64);
+      context.lineTo(attackHandX, attackHandY);
+      context.moveTo(0, -62);
+      context.lineTo(-19 + rearArmSwing, -48);
+      context.moveTo(0, -39);
+      context.lineTo(frontKneeX, legKneeY);
+      context.lineTo(frontKneeX - 7, 0);
+      context.moveTo(0, -39);
+      context.lineTo(rearKneeX, legKneeY);
+      context.lineTo(rearKneeX + 8, 0);
+      context.stroke();
+      drawWeapon(fighter.weapon, special);
+
+      if (isAttacking) {
+        context.strokeStyle = special ? "#fff0a8" : color;
+        context.lineWidth = ultimate ? 14 : (special ? 9 : 4);
+        context.beginPath();
+        const swingProgress = 1 - fighter.attackTime / (ultimate ? 0.78 : (special ? 0.42 : 0.26));
+        const swingStart = (special ? -1.45 : -1.05) + swingProgress * 0.5;
+        const swingEnd = swingStart + (special ? 1.25 : 0.9);
+        context.arc(ultimate ? 28 : (special ? 23 : 14), ultimate ? -58 : (special ? -56 : -58),
+          ultimate ? 112 : (special ? 78 : 43), swingStart, swingEnd);
+        context.stroke();
+        if (ultimate) {
+          context.fillStyle = "#fff0a8";
+          context.font = "900 16px Segoe UI";
+          context.textAlign = "center";
+          context.fillText("ULT!", 0, -128);
+        }
+      }
+
+      context.globalAlpha = 1;
+      context.fillStyle = color;
+      context.font = "bold 12px Segoe UI";
+      context.textAlign = "center";
+      context.fillText(isCpu ? "CPU" : "YOU", 0, -112);
+      context.restore();
+    }
+
+    function drawArena() {
+      if (!activeConfig) return;
+      drawBackground();
+      context.save();
+      if (cameraShake > 0) {
+        context.translate(Math.sin(performance.now() * 0.09) * cameraShake, Math.cos(performance.now() * 0.13) * cameraShake * 0.45);
+      }
+      items.forEach(drawItem);
+      effects.forEach((effect) => {
+        context.globalAlpha = Math.min(1, effect.life * 3);
+        context.fillStyle = effect.color;
+        context.font = "bold 26px Segoe UI";
+        context.textAlign = "center";
+        const rise = (0.42 - effect.life) * 95;
+        context.fillText(effect.message || `+${effect.damage}%`, effect.x, effect.y - rise);
+        if (effect.special) {
+          context.font = "bold 16px Segoe UI";
+          context.fillText("SPECIAL!", effect.x, effect.y - rise - 24);
+        }
+        context.globalAlpha = 1;
+      });
+      sparks.forEach((spark) => {
+        context.globalAlpha = Math.min(1, spark.life * 4);
+        context.fillStyle = spark.color;
+        context.beginPath();
+        context.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2);
+        context.fill();
+      });
+      context.globalAlpha = 1;
+      drawFighter(player, activeConfig.color, false);
+      drawFighter(cpu, "#ff6685", true);
+      if (playerCombo > 1) {
+        context.fillStyle = "#fff0a8";
+        context.font = "900 24px Segoe UI";
+        context.textAlign = "center";
+        context.fillText(`${playerCombo} HIT COMBO!`, arenaWidth / 2, 70);
+      }
+      context.restore();
+    }
+
+    function gameLoop(timestamp) {
+      if (!gameActive) return;
+      const delta = lastFrameTime ? Math.min((timestamp - lastFrameTime) / 1000, 0.04) : 0;
+      lastFrameTime = timestamp;
+      updateGame(delta);
+      drawArena();
+      if (gameActive) requestAnimationFrame(gameLoop);
+    }
+
+    function actionForCode(playerId, code) {
+      return Object.keys(keybinds[playerId]).find((action) => keybinds[playerId][action] === code);
+    }
+
+    function handlePlayerAction(playerId, action) {
+      const fighter = playerId === "p1" ? player : cpu;
+      const target = playerId === "p1" ? cpu : player;
+      if (action === "left" || action === "right") {
+        keys.add(`${playerId}:${action}`);
+      } else if (action === "jump") {
+        jump(fighter);
+      } else if (action === "attack") {
+        attack(fighter, target, false, false);
+      } else if (action === "special") {
+        attack(fighter, target, true, false);
+      } else if (action === "ultimate") {
+        useUltimate(fighter, target);
+      } else if (action === "drop") {
+        dropWeapon(fighter);
+      }
+    }
+
+    function handleGameKeyDown(event) {
+      if (!gameScreen.classList.contains("active")) return;
+      const p1Action = actionForCode("p1", event.code);
+      const p2Action = activeConfig.mode === "player2" ? actionForCode("p2", event.code) : undefined;
+      if (!p1Action && !p2Action) return;
+      event.preventDefault();
+      if (event.repeat) return;
+      if (p1Action) handlePlayerAction("p1", p1Action);
+      if (p2Action) handlePlayerAction("p2", p2Action);
+    }
+
+    function handleGameKeyUp(event) {
+      ["p1", "p2"].forEach((playerId) => {
+        const action = actionForCode(playerId, event.code);
+        if (action === "left" || action === "right") keys.delete(`${playerId}:${action}`);
+      });
+    }
+
+    document.addEventListener("keydown", handleGameKeyDown);
+    document.addEventListener("keyup", handleGameKeyUp);
+    window.addEventListener("blur", () => keys.clear());
+
+    document.querySelectorAll("[data-control]").forEach((button) => {
+      const control = button.dataset.control;
+      const release = () => {
+        keys.delete(`p1:${control}`);
+      };
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        if (control === "left" || control === "right") {
+          keys.add(`p1:${control}`);
+        } else if (control === "jump") {
+          jump(player);
+        } else if (control === "drop") {
+          dropWeapon(player);
+        } else if (control === "ultimate") {
+          useUltimate(player, cpu);
+        } else {
+          attack(player, cpu, control === "special", false);
+        }
+      });
+      button.addEventListener("pointerup", release);
+      button.addEventListener("pointerleave", release);
+      button.addEventListener("pointercancel", release);
+      button.addEventListener("click", (event) => {
+        if (event.detail !== 0) return;
+        if (control === "jump") jump(player);
+        else if (control === "drop") dropWeapon(player);
+        else if (control === "ultimate") useUltimate(player, cpu);
+        else if (control === "attack" || control === "special") attack(player, cpu, control === "special", false);
+      });
+    });
+
+    playButton.addEventListener("click", startFight);
+    rematchButton.addEventListener("click", startFight);
+    quitButton.addEventListener("click", returnToMenu);
+    loadoutButton.addEventListener("click", returnToMenu);
+  </script>
+</body>
+</html>
